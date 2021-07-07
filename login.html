@@ -1,98 +1,128 @@
 <!DOCTYPE html>
 
-<head>
-<title>
-	
-    Login
-</title>
-<style>
-    body
-    {
-        font-family: Arial;   
-        background-color: #1a1a1a; 
-        color: #929292;
-        /*background-image: linear-gradient(to bottom, #2c2c2c, #1a1a1a 116px);*/
-    }
-    h1
-    {
-        color:Gray; 
-        margin-top: 0.5em;
-        margin-bottom: 0.5em;
-    }
-    a
-    {
-        color: gray;
-    }
-* {box-sizing: border-box}
+<html>
+    <head>
+        <title>Login</title>
+        <style>
+            body
+            {
+                font-family: Arial;
+                background-color: #1a1a1a;
+                color: #929292;
+                /*background-image: linear-gradient(to bottom, #2c2c2c, #1a1a1a 116px);*/
+
+                max-width: 700px;
+                margin: 0 auto;
+            }
+            h1
+            {
+                color:Gray;
+                margin-top: 0.5em;
+                margin-bottom: 0.5em;
+            }
+            a
+            {
+                color: gray;
+            }
+        * {box-sizing: border-box}
 
 
-.container {
-  padding: 16px;
-}
+        .container {
+          padding: 16px;
+        }
 
-input[type=text], input[type=password] {
-  width: 100%;
-  padding: 15px;
-  margin: 5px 0 22px 0;
-  display: inline-block;
-  border: none;
-  background: #2a2a2a;
-  
-}
+        input[type=text], input[type=password] {
+          width: 100%;
+          padding: 15px;
+          margin: 5px 0 22px 0;
+          display: inline-block;
+          border: none;
+          background: #2a2a2a;
+          color: white;
+        }
 
-input[type=text]:focus, input[type=password]:focus {
-  background-color: #1a1a1a;
-  color: white;
-  outline: none;
-}
+        input[type=text]:focus, input[type=password]:focus {
+          background-color: #1a1a1a;
+          color: white;
+          outline: none;
+        }
 
-hr {
-  border: 1px solid #1a1a1a;
-  margin-bottom: 25px;
-}
+        hr {
+          border: 1px solid #1a1a1a;
+          margin-bottom: 25px;
+        }
 
-.registerbtn {
-  color: #afafaf;
-  background-color:#2a2a2a; 
-  padding: 16px 20px;
-  margin: 8px 0;
-  border: none;
-  cursor: pointer;
-  width: 100%;
-  opacity: 0.9;
-}
+        .btn-default {
+          color: #afafaf;
+          background-color:#2a2a2a;
+          padding: 16px 20px;
+          margin: 8px 0;
+          border: none;
+          cursor: pointer;
+          width: 100%;
+          opacity: 0.9;
+        }
 
-.registerbtn:hover {
-  opacity:1;
-}
+        .btn-default:hover {
+          opacity:1;
+        }
 
-.signin {
-  color: #afafaf;
-  background-color:#2a2a2a; 
-  text-align: center;
-}
-</style>
-</head>
+        .signin {
+          color: #afafaf;
+          background-color:#2a2a2a;
+          text-align: center;
+        }
+        </style>
+    </head>
 
-<body>
-    <div class="container">
-    <h1>Login</h1>
-    <p>Please fill in this form to login</p>
-    <hr>
+    <body>
+        <div class="container">
+            <h1>Login</h1>
+            <p>Please fill in this form to login</p>
+            <hr>
 
-    <label for="email"><b>Email</b></label>
-    <input type="text" placeholder="Enter Email" name="email" required>
+            <form>
+                <label for="email"><b>Email</b></label>
+                <input id="email" type="text" placeholder="Enter Email" name="email" autocomplete="email" required>
 
-    <label for="psw"><b>Password</b></label>
-    <input type="password" placeholder="Enter Password" name="psw" required>
-    <hr>
+                <label for="psw"><b>Password</b></label>
+                <input id="psw" type="password" placeholder="Enter Password" name="psw" autocomplete="current-password" required>
+                <hr>
 
 
-    <button type="submit" class="registerbtn">Login</button>
-  </div>
+                <button type="submit" class="btn-default">Login</button>
+            </form>
+        </div>
 
-  <div class="container signin">
-    <p>Don't have an account? <a href="#">Register</a>.</p>
-  </div>
+        <div class="container signin">
+            <p>Don't have an account? <a href="/register.html">Register</a>.</p>
+        </div>
 
-</body>
+        <script src="/js/app.js"></script>
+        <script>
+            let form = document.querySelector('form');
+            form.addEventListener('submit', ev => {
+                ev.preventDefault();
+
+                let reqData = {
+                    scope: 'auth',
+                    method: 'login',
+                    email: document.querySelector('input[name="email"]').value,
+                    password: document.querySelector('input[name="psw"]').value,
+                };
+
+                SendAJAX('POST', '/ajax.php', reqData).then(data => {
+                    data = JSON.parse(data);
+                    let status_code = data.status[0];
+                    let status_msg = data.status[1];
+
+                    if(status_code === 0) {
+                        document.location.replace('/');
+                    } else {
+                        alert(status_msg);
+                    }
+                });
+            });
+        </script>
+    </body>
+</html>

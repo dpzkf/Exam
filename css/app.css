@@ -1,0 +1,55 @@
+:root {
+    --color-success: #126212;
+    --color-error: #5c1212;
+}
+
+input[type=text], input[type=password], textarea {
+    width: 100%;
+    padding: 15px;
+    margin: 5px 0 22px 0;
+    display: inline-block;
+    border: none;
+    background: #2a2a2a;
+    color: white;
+    box-sizing: border-box;
+}
+
+input[type=text]:focus, input[type=password]:focus, textarea:focus {
+    background-color: #1a1a1a;
+    color: white;
+    outline: none;
+}
+
+.btn-default {
+    color: #afafaf;
+    background-color: #2a2a2a;
+    padding: 16px 20px;
+    margin: 8px 0;
+    border: none;
+    cursor: pointer;
+    width: 100%;
+    opacity: 0.9;
+    transition: .5s background-color;
+}
+
+.btn-default:hover {
+    opacity:1;
+}
+
+.btn-danger:hover {
+    background: var(--color-error);
+}
+
+hr {
+    border: 1px solid #1a1a1a;
+    margin-bottom: 25px;
+}
+
+tr {
+    text-align: left;
+}
+
+a {
+    color: #ffffff;
+    text-decoration: none;
+}

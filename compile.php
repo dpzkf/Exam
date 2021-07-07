@@ -1,21 +1,7 @@
 <?php
 
-require_once 'config.php';
+require_once 'autoload.php';
 require_once 'mono.php';
-
-function RandomSequence($length, $characters = null)
-{
-    if(empty($characters)) {
-        $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
-    }
-
-    $randstring = '';
-    for ($i = 0; $i < $length; $i++) {
-        $randstring .= $characters[rand(0, strlen($characters)-1)];
-    }
-
-    return $randstring;
-}
 
 $received_code = isset($_POST['code']) ? $_POST['code'] : '';
 $response = [];

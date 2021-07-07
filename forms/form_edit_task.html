@@ -1,0 +1,11 @@
+<form style="max-width: 600px;" id="taskEdit" data-task-id="1">
+    <label for="task_name"><b>Task title</b></label>
+    <input id="task_name" type="text" placeholder="Enter task name" name="name" required="required" value="%TASK_TITLE%">
+    <label for="task_question"><b>Task question</b></label>
+    <input id="task_question" type="text" placeholder="Enter task question" name="question" required="required" value="%TASK_QUESTION%">
+    <label for="task_output"><b>Task expected output</b></label>
+    <textarea id="task_output" placeholder="Enter task output" name="output" required="required">%TASK_OUTPUT%</textarea>
+    <hr>
+    <button type="button" class="btn-default btn-danger" id="library_delete">Delete</button>
+    <button type="submit" class="btn-default">Save</button>
+</form>
