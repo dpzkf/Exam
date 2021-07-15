@@ -13,6 +13,9 @@ $status_codes = [
     "SECURITY_KEY_INVALID" => [7, "Security key invalid"],
     "INVALID_ACTION" => [8, "Invalid action"],
     "DB_ERROR" => [9, "Database error"],
+    "NO_AUTH" => [10, "User not authorized"],
+    "UNKNOWN_LIBRARY" => [11, "Unknown library"],
+    "UNKNOWN_TEST" => [12, "First - select the test in progress"],
 ];
 
 $data = file_get_contents('php://input');
@@ -26,6 +29,12 @@ if(isset($data)) {
     $secauth = new \Components\Auth\SecAuth($mysqli);
     $auth = new \Components\Auth\Auth($mysqli, $salt['password'], $salt['sec_auth']);
     $tests = new \Components\Tests\Tests($mysqli);
+    $progress = new \Components\Progress\Progress($mysqli, $tests);
+
+    $user = null;
+    if(!empty($_COOKIE['security_key']) && $secauthkey = $secauth->SearchKey($_COOKIE['security_key'])) {
+        $user = $auth->SearchUserByID($secauthkey->GetUserID());
+    }
 
     if($data['scope'] == "auth") {
         if($data['method'] == "register") {
@@ -71,10 +80,22 @@ if(isset($data)) {
         }
     } else if($data['scope'] == "forms") {
         if($data['method'] == "library_new") {
-            if($form = FormLoader::LoadForm('form_new_library'))
-                $json_response["form"] = $form;
+            if(empty($data['action'])) {
+                if($form = FormLoader::LoadForm('form_new_library'))
+                    $json_response["form"] = $form;
 
-            // todo actions (save)
+                if($js = FormLoader::LoadJS('form_new_library'))
+                    $json_response["js"] = $js;
+            } else if($data['action'] == "save") {
+                if(!empty($data['library_name'])) {
+                    $library = new Library(0, $data['library_name'], []);
+                    if(!$tests->CreateLibrary($library)) {
+                        $json_response["status"] = $status_codes['DB_ERROR'];
+                    }
+                } else {
+                    $json_response["status"] = $status_codes['INVALID_DATA'];
+                }
+            }
         } else if($data['method'] == "library_edit") {
             $library = $tests->GetLibraryByID((int) $data['library_id']);
 
@@ -111,6 +132,45 @@ if(isset($data)) {
             } else {
                 $json_response["status"] = $status_codes['INVALID_DATA'];
             }
+        } else if($data['method'] == "task_new") {
+            if(empty($data['action']) && !empty($data['library_id'])) {
+                $library = $tests->GetLibraryByID($data['library_id']);
+
+                if($form = FormLoader::LoadForm('form_new_task')) {
+                    if($library) {
+                        $form = preg_replace("/(%LIBRARY_ID%)/", $library->GetID(), $form);
+                    }
+
+                    $json_response["form"] = $form;
+                }
+
+                if($js = FormLoader::LoadJS('form_new_task'))
+                    $json_response["js"] = $js;
+            } else if($data['action'] == "save") {
+                if(!empty($data['library_id']) && !empty($data['task_name']) && !empty($data['task_question']) && !empty($data['task_output'])) {
+                    $library = $tests->GetLibraryByID($data['library_id']);
+                    if($library) {
+                        $task = new Task(
+                            0,
+                            $library->GetID(),
+                            $data['task_name'],
+                            $data['task_question'],
+                            $data['task_output'],
+                            2000
+                        ); // 2 sec max execute time
+
+                        if (!$tests->CreateTask($task)) {
+                            $json_response["status"] = $status_codes['DB_ERROR'];
+                        }
+                    } else {
+                        $json_response["status"] = $status_codes['UNKNOWN_LIBRARY'];
+                    }
+                } else {
+                    $json_response["status"] = $status_codes['INVALID_DATA'];
+                }
+            } else {
+                $json_response["status"] = $status_codes['INVALID_ACTION'];
+            }
         } else if($data['method'] == "task_edit") {
             $task = $tests->GetTaskByID((int) $data['task_id']);
 
@@ -118,16 +178,27 @@ if(isset($data)) {
                 if(empty($data['action'])) {
                     if($form = FormLoader::LoadForm('form_edit_task')) {
                         $form = preg_replace("/(%TASK_ID%)/", $task->GetID(), $form);
-                        $form = preg_replace("/(%TASK_TITLE%)/", $task->GetTitle(), $form);
-                        $form = preg_replace("/(%TASK_QUESTION%)/", $task->GetQuestion(), $form);
-                        $form = preg_replace("/(%TASK_OUTPUT%)/", $task->GetExpectedOutput(), $form);
+                        $form = preg_replace("/(%TASK_TITLE%)/", htmlspecialchars($task->GetTitle()), $form);
+                        $form = preg_replace("/(%TASK_QUESTION%)/", htmlspecialchars($task->GetQuestion()), $form);
+                        $form = preg_replace("/(%TASK_OUTPUT%)/", htmlspecialchars($task->GetExpectedOutput()), $form);
 
                         $json_response["form"] = $form;
                     }
 
-                    // TODO
-                    if($js = FormLoader::LoadJS('form_edit_library'))
+                    if($js = FormLoader::LoadJS('form_edit_task'))
                         $json_response["js"] = $js;
+                } else if($data['action'] == "save") {
+                    if(!empty($data['new_title'])) {
+                        $task->SetTitle($data['new_title']);
+                        $task->SetQuestion($data['new_question']);
+                        $task->SetExpectedOutput($data['new_expected_output']);
+
+                        if(!$tests->UpdateTask($task)) {
+                            $json_response["status"] = $status_codes['DB_ERROR'];
+                        }
+                    } else {
+                        $json_response["status"] = $status_codes['INVALID_DATA'];
+                    }
                 } else if($data['action'] == "delete") {
                     if(!$tests->DeleteTask($task)) {
                         $json_response["status"] = $status_codes['DB_ERROR'];
@@ -141,7 +212,51 @@ if(isset($data)) {
         } else if($data['method'] == "side_menu") {
             $libraries = $tests->GetLibraries();
 
-            $json_response["form"] = (new CGSideMenu($libraries))->GenerateHTML();
+            $json_response["form"] = (new CGSideMenuTeacher($libraries))->GenerateHTML();
+        } else {
+            $json_response["status"] = $status_codes['INVALID_METHOD'];
+        }
+    }  else if($data['scope'] == "progress") {
+        if($data['method'] == "activate_library_tests") {
+            $library = $tests->GetLibraryByID((int) $data['library_id']);
+
+            if($library) {
+                if ($user) {
+                    $json_response["dbg"]["lib"] = $library;
+
+                    if ($progress->ActivateLibraryForUser($user, $library)) {
+                        setcookie('selected_library', $library->GetID(), time()+60*60*24*30); // valid cookie 30 days
+                    } else {
+                        $json_response["status"] = $status_codes['NO_AUTH'];
+                    }
+                } else {
+                    $json_response["status"] = $status_codes['NO_AUTH'];
+                }
+            } else {
+                $json_response["status"] = $status_codes['INVALID_DATA'];
+            }
+        } else if($data['method'] == "get_current_task") {
+            if(!empty($_COOKIE['selected_library'])) {
+                $library = $tests->GetLibraryByID((int) $_COOKIE['selected_library']);
+
+                if($library) {
+                    if ($user) {
+                        $current_progress = $progress->GetForUserByLibrary($user, $library);
+
+                        $library_tasks = $library->GetTasks();
+                        $completed_tasks = $current_progress->GetCompletedTasks();
+                        $current_task = $completed_tasks < count($library_tasks) ? $library_tasks[$completed_tasks] : null;
+
+                        $json_response["task"] = $current_task;
+                    } else {
+                        $json_response["status"] = $status_codes['NO_AUTH'];
+                    }
+                } else {
+                    $json_response["status"] = $status_codes['INVALID_DATA'];
+                }
+            } else {
+                $json_response["status"] = $status_codes['UNKNOWN_TEST'];
+            }
         } else {
             $json_response["status"] = $status_codes['INVALID_METHOD'];
         }

@@ -1,6 +1,6 @@
 <?php
 
-class CGSideMenu extends ContentGenerator {
+class CGSideMenuTeacher extends ContentGenerator {
     private array $libraries;
 
     public function __construct(array $libraries) {
@@ -15,16 +15,18 @@ class CGSideMenu extends ContentGenerator {
             $title = $library->GetTitle();
 
             $tasks = '';
-            foreach ($library->GetTasks() as $task) {
-                $task_id = $task->GetID();
-                $task_title = $task->GetTitle();
 
-                $tasks .= '<li><a href="#task_edit" data-task-id="'.$task_id.'">'.$task_id.'. '.$task_title.'</a></li>';
+            $raw_tasks = $library->GetTasks();
+            for($i = 0; $i < count($raw_tasks); $i++) {
+                // foreach ($library->GetTasks() as $task) {
+                $task_id = $raw_tasks[$i]->GetID();
+                $task_title = $raw_tasks[$i]->GetTitle();
+
+                $tasks .= '<li><a href="#task_edit" data-task-id="'.$task_id.'">'.($i+1).'. '.$task_title.'</a></li>';
             }
 
-            if(strlen($tasks) > 0)
-                $tasks = '<ul class="library-items">
-            <li><a href="#new_task">
+            $tasks = '<ul class="library-items">
+            <li><a href="#new_task" data-library-id="'.$id.'">
                 <img src="/images/mdi_plus.svg" alt="Associative icon" class="va-middle"><span class="va-middle">New task</span>
             </a></li>'.$tasks.'
             </ul>';

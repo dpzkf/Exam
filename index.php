@@ -20,12 +20,16 @@ if(!empty($_COOKIE['security_key']) && $secauthkey = $secauth->SearchKey($_COOKI
     $user = $auth->SearchUserByID($secauthkey->GetUserID());
     // $user_email = $user->GetEmail();
 
+
     if($user->IsTeacher()) {
         $upper_menu_items[] = ["Teacher panel", "teacher.php", "link"];
     }
-    $upper_menu_items[] = ["Progress", "#", "link"];
+
+    $upper_menu_items[] = ["Home", "/index.php", "link"];
+    $upper_menu_items[] = ["Progress", "/progress.php", "link"];
     $upper_menu_items[] = ["Logout", "#logout", "link"];
 } else {
+    $upper_menu_items[] = ["Home", "/index.php", "link guest"];
     $upper_menu_items[] = ["Login", "/login.html", "link guest"];
     $upper_menu_items[] = ["Register", "/register.html", "link guest"];
 }
@@ -91,6 +95,10 @@ $upper_menu = build_menu_upper_links($upper_menu_items);
             table#upper_menu td a.link + a.link {
                 margin-left: 22px;
             }
+
+            #task_details p {
+                margin: 0;
+            }
         </style>
 
         <script src="https://unpkg.com/monaco-editor@latest/min/vs/loader.js"></script>
@@ -152,8 +160,7 @@ $upper_menu = build_menu_upper_links($upper_menu_items);
                 Language: C#
 
             </h2>
-
-
+                <div id="task_details"></div>
             </tr>
         </table>
 
@@ -291,6 +298,32 @@ $upper_menu = build_menu_upper_links($upper_menu_items);
                         });
                     });
                 }
+            }
+
+            let selected_library = new jecookie("selected_library");
+            if(selected_library.load()) {
+                SendAJAX('POST', '/ajax.php', {
+                    scope: 'progress',
+                    method: 'get_current_task'
+                }).then(data => {
+                    data = JSON.parse(data);
+                    let status_code = data.status[0];
+                    let status_msg = data.status[1];
+
+                    if(status_code === 0) {
+                        let task_details = document.querySelector('#task_details');
+
+                        let task_title = document.createElement('h3');
+                        let task_question = document.createElement('p');
+
+                        task_title.innerHTML = data.task.title;
+                        task_question.innerHTML = data.task.question;
+
+                        task_details.innerHTML = "";
+                        task_details.appendChild(task_title);
+                        task_details.appendChild(task_question);
+                    }
+                });
             }
 
             // let security_key = new jecookie("security_key");

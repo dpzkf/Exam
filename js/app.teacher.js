@@ -1,4 +1,30 @@
 function RebindSideMenuEvents() {
+    let mainContent = document.querySelector('#main-content');
+    document.querySelector('a[href="#new_library"]').addEventListener('click', e => {
+        e.preventDefault();
+
+        SendAJAX('POST', '/ajax.php', {
+            scope: 'forms',
+            method: 'library_new'
+        }).then(data => {
+            data = JSON.parse(data);
+            let status_code = data.status[0];
+            let status_msg = data.status[1];
+
+            if(status_code === 0) {
+                mainContent.innerHTML = data.form;
+
+                if(data.js) {
+                    let script = document.createElement('script');
+                    script.text = data.js;
+                    mainContent.appendChild(script);
+                }
+            }else {
+                alert(status_msg);
+            }
+        });
+    });
+
     document.querySelectorAll('a[href="#library_select"]').forEach(link => {
         link.addEventListener('click', e => {
             e.preventDefault();
@@ -7,6 +33,35 @@ function RebindSideMenuEvents() {
                 scope: 'forms',
                 method: 'library_edit',
                 library_id: link.dataset.libraryId,
+            }).then(data => {
+                data = JSON.parse(data);
+                let status_code = data.status[0];
+                let status_msg = data.status[1];
+
+                if(status_code === 0) {
+                    mainContent.innerHTML = data.form;
+
+                    if(data.js) {
+                        let script = document.createElement('script');
+                        script.text = data.js;
+                        mainContent.appendChild(script);
+                    }
+                }else {
+                    alert(status_msg);
+                }
+            });
+        });
+    });
+
+    document.querySelectorAll('a[href="#new_task"]').forEach(element => {
+        element.addEventListener('click', e => {
+            // document.querySelector('a[href="#new_task"]').addEventListener('click', e => {
+            e.preventDefault();
+
+            SendAJAX('POST', '/ajax.php', {
+                scope: 'forms',
+                method: 'task_new',
+                library_id: element.dataset.libraryId,
             }).then(data => {
                 data = JSON.parse(data);
                 let status_code = data.status[0];
