@@ -235,6 +235,24 @@ $upper_menu = build_menu_upper_links($upper_menu_items);
                             if(structIsValid({runtime: {exit_code: 'number', output: 'object'}}, response)) {
                                 // runtime processing
                                 outputConsole.value = response.runtime.output.join("\n");
+
+                                // check_output
+                                SendAJAX('POST', '/ajax.php', JSON.stringify({
+                                    scope: 'progress',
+                                    method: 'check_output',
+                                    runtime_output: response.runtime.output,
+                                })).then(data => {
+                                    data = JSON.parse(data);
+                                    let status_code = data.status[0];
+                                    let status_msg = data.status[1];
+
+                                    if(status_code === 0) {
+                                        alert("Yes, right!");
+                                        document.location.reload();
+                                    } else {
+                                        alert(status_msg);
+                                    }
+                                });
                             }
                         } else {
                             // compiler errors processing

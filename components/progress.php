@@ -52,4 +52,16 @@ class Progress {
 
         return $this->mysqli->errno == 0;
     }
+
+    public function AnswerCorrect(User $user, Library $library) {
+        $library_progress = $this->GetForUserByLibrary($user, $library);
+
+        $completed_tasks = $library_progress->GetCompletedTasks() + 1;
+        $user_id = $user->GetID();
+        $library_id = $library->GetID();
+
+        $this->mysqli->query("UPDATE `progress` SET `completed_tasks` = '$completed_tasks' WHERE `id_user`='$user_id' AND `id_library`='$library_id';");
+
+        return $this->mysqli->errno == 0;
+    }
 }

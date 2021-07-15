@@ -16,6 +16,7 @@ $status_codes = [
     "NO_AUTH" => [10, "User not authorized"],
     "UNKNOWN_LIBRARY" => [11, "Unknown library"],
     "UNKNOWN_TEST" => [12, "First - select the test in progress"],
+    "WRONG_OUTPUT" => [13, "Wrong output!"],
 ];
 
 $data = file_get_contents('php://input');
@@ -256,6 +257,45 @@ if(isset($data)) {
                 }
             } else {
                 $json_response["status"] = $status_codes['UNKNOWN_TEST'];
+            }
+        } else if($data['method'] == "check_output") {
+            if(isset($data['runtime_output'])) {
+                if (!empty($_COOKIE['selected_library'])) {
+                    $library = $tests->GetLibraryByID((int)$_COOKIE['selected_library']);
+
+                    if ($library) {
+                        if ($user) {
+                            $current_progress = $progress->GetForUserByLibrary($user, $library);
+
+                            $library_tasks = $library->GetTasks();
+                            $completed_tasks = $current_progress->GetCompletedTasks();
+                            $current_task = $completed_tasks < count($library_tasks) ? $library_tasks[$completed_tasks] : null;
+
+                            if(gettype($data['runtime_output']) == "array"){
+                                $data['runtime_output'] = join("\n", $data['runtime_output']);
+                            }
+
+                            $runtime_output = trim($data['runtime_output']);
+                            if(!$current_task) {
+                                $json_response["status"] = $status_codes['UNKNOWN_TEST'];
+                            } else if($runtime_output == trim(htmlspecialchars_decode($current_task->GetExpectedOutput()))) {
+                                if(!$progress->AnswerCorrect($user, $library)) {
+                                    $json_response["status"] = $status_codes['DB_ERROR'];
+                                }
+                            } else {
+                                $json_response["status"] = $status_codes['WRONG_OUTPUT'];
+                            }
+                        } else {
+                            $json_response["status"] = $status_codes['NO_AUTH'];
+                        }
+                    } else {
+                        $json_response["status"] = $status_codes['INVALID_DATA'];
+                    }
+                } else {
+                    $json_response["status"] = $status_codes['UNKNOWN_TEST'];
+                }
+            } else {
+                $json_response["status"] = $status_codes['INVALID_DATA'];
             }
         } else {
             $json_response["status"] = $status_codes['INVALID_METHOD'];
